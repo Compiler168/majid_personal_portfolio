@@ -9,6 +9,11 @@ const mongoose = require('mongoose');
 let cachedConnection = null;
 
 const connectDB = async () => {
+    if (!process.env.MONGODB_URI) {
+        console.error('❌ MONGODB_URI is not defined');
+        throw new Error('Database connection string is missing in environment variables');
+    }
+
     // If we have a cached connection and it's still connected, use it
     if (cachedConnection && mongoose.connection.readyState === 1) {
         console.log('🔄 Using cached MongoDB connection');
