@@ -25,9 +25,46 @@ app.use(helmet({
 }));
 
 // Enable CORS for frontend
-// In development, allow all origins (including file:// protocol)
 const corsOptions = {
-    origin: true, // Allow all origins in development
+    origin: function (origin, callback) {
+        // Allow all origins in development and production
+        // For production, you can restrict to specific domains
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:5500',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:5500',
+            'http://localhost:8080',
+            process.env.FRONTEND_URL,
+            // Allow Vercel deployments
+            /\.vercel\.app$/,
+            /\.vercel\.com$/
+        ].filter(Boolean);
+
+        // Allow requests with no origin (file://, mobile apps, curl, postman)
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        // Check if origin matches any allowed origin
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (allowed instanceof RegExp) {
+                return allowed.test(origin);
+            }
+            return allowed === origin;
+        });
+
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            // In development, allow all origins
+            if (process.env.NODE_ENV !== 'production') {
+                callback(null, true);
+            } else {
+                callback(null, true); // Allow all for now, can be restricted later
+            }
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -50,7 +87,7 @@ const apiLimiter = rateLimit({
 // Stricter rate limiting for contact form to prevent spam
 const contactLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 5, // Limit each IP to 5 contact submissions per hour
+    max: 10, // Limit each IP to 10 contact submissions per hour
     message: {
         success: false,
         message: 'Too many contact submissions from this IP. Please try again after an hour.'
@@ -85,6 +122,19 @@ if (process.env.NODE_ENV === 'development') {
 // ==============
 // API Routes
 // ==============
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'Majid Iqbal Portfolio API',
+        version: '1.0.0',
+        endpoints: {
+            health: '/api/health',
+            contact: '/api/contact'
+        }
+    });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -140,44 +190,47 @@ app.use((err, req, res, next) => {
 });
 
 // ==============
-// Start Server
+// Start Server (for local development)
 // ==============
 
-const PORT = process.env.PORT || 5000;
+// Only start server if not in Vercel serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-    console.log('');
-    console.log('╔════════════════════════════════════════════╗');
-    console.log('║   🚀 Portfolio Backend API Server          ║');
-    console.log('╠════════════════════════════════════════════╣');
-    console.log(`║   📍 Port: ${PORT}                            ║`);
-    console.log(`║   🌍 Environment: ${(process.env.NODE_ENV || 'development').padEnd(16)}    ║`);
-    console.log('║   ✅ Status: Running                       ║');
-    console.log('╚════════════════════════════════════════════╝');
-    console.log('');
-    console.log('📝 Available Endpoints:');
-    console.log(`   POST   http://localhost:${PORT}/api/contact     - Submit contact form`);
-    console.log(`   GET    http://localhost:${PORT}/api/contact     - List all contacts`);
-    console.log(`   GET    http://localhost:${PORT}/api/contact/:id - Get single contact`);
-    console.log(`   PUT    http://localhost:${PORT}/api/contact/:id/status - Update status`);
-    console.log(`   DELETE http://localhost:${PORT}/api/contact/:id - Delete contact`);
-    console.log(`   GET    http://localhost:${PORT}/api/health      - Health check`);
-    console.log('');
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('👋 SIGTERM signal received: closing HTTP server');
-    server.close(() => {
-        console.log('🛑 HTTP server closed');
-        process.exit(0);
+    const server = app.listen(PORT, () => {
+        console.log('');
+        console.log('╔════════════════════════════════════════════╗');
+        console.log('║   🚀 Portfolio Backend API Server          ║');
+        console.log('╠════════════════════════════════════════════╣');
+        console.log(`║   📍 Port: ${PORT}                            ║`);
+        console.log(`║   🌍 Environment: ${(process.env.NODE_ENV || 'development').padEnd(16)}    ║`);
+        console.log('║   ✅ Status: Running                       ║');
+        console.log('╚════════════════════════════════════════════╝');
+        console.log('');
+        console.log('📝 Available Endpoints:');
+        console.log(`   POST   http://localhost:${PORT}/api/contact     - Submit contact form`);
+        console.log(`   GET    http://localhost:${PORT}/api/contact     - List all contacts`);
+        console.log(`   GET    http://localhost:${PORT}/api/contact/:id - Get single contact`);
+        console.log(`   PUT    http://localhost:${PORT}/api/contact/:id/status - Update status`);
+        console.log(`   DELETE http://localhost:${PORT}/api/contact/:id - Delete contact`);
+        console.log(`   GET    http://localhost:${PORT}/api/health      - Health check`);
+        console.log('');
     });
-});
 
-process.on('unhandledRejection', (err) => {
-    console.error('❌ Unhandled Promise Rejection:', err);
-    // Close server & exit process
-    server.close(() => process.exit(1));
-});
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+        console.log('👋 SIGTERM signal received: closing HTTP server');
+        server.close(() => {
+            console.log('🛑 HTTP server closed');
+            process.exit(0);
+        });
+    });
 
+    process.on('unhandledRejection', (err) => {
+        console.error('❌ Unhandled Promise Rejection:', err);
+        server.close(() => process.exit(1));
+    });
+}
+
+// Export for Vercel serverless
 module.exports = app;
