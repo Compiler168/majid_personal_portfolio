@@ -2,36 +2,40 @@ const mongoose = require('mongoose');
 
 /**
  * MongoDB Database Connection Configuration
- * Handles connection with retry logic and proper error handling
+ * Optimized for Serverless Environments (Vercel)
+ * Caches the connection to prevent multiple connections across invocations
  */
+
+let cachedConnection = null;
+
 const connectDB = async () => {
+    // If we have a cached connection and it's still connected, use it
+    if (cachedConnection && mongoose.connection.readyState === 1) {
+        console.log('🔄 Using cached MongoDB connection');
+        return cachedConnection;
+    }
+
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            // Modern Mongoose options (Mongoose 6+)
+        console.log('📡 Connecting to MongoDB Atlas...');
+
+        // Mongoose options for stable connection in serverless
+        const options = {
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
-        });
+            bufferCommands: false, // Disable buffering to fail fast if connection drops
+        };
 
+        const conn = await mongoose.connect(process.env.MONGODB_URI, options);
+
+        cachedConnection = conn;
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-
-        // Handle connection events
-        mongoose.connection.on('error', (err) => {
-            console.error(`❌ MongoDB connection error: ${err.message}`);
-        });
-
-        mongoose.connection.on('disconnected', () => {
-            console.warn('⚠️  MongoDB disconnected. Attempting to reconnect...');
-        });
-
-        mongoose.connection.on('reconnected', () => {
-            console.log('✅ MongoDB reconnected successfully');
-        });
 
         return conn;
     } catch (error) {
         console.error(`❌ MongoDB Connection Error: ${error.message}`);
-        // Exit process with failure
-        process.exit(1);
+        // In serverless, we don't want to process.exit(1) as it kills the function container
+        // Instead, we throw the error so the request handler can catch it
+        throw error;
     }
 };
 

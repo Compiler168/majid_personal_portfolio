@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 require('dotenv').config();
 
@@ -24,84 +23,19 @@ app.use(helmet({
     contentSecurityPolicy: false // Disabled for API
 }));
 
-// Enable CORS for frontend
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow all origins in development and production
-        // For production, you can restrict to specific domains
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:5500',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:5500',
-            'http://localhost:8080',
-            process.env.FRONTEND_URL,
-            // Allow Vercel deployments
-            /\.vercel\.app$/,
-            /\.vercel\.com$/
-        ].filter(Boolean);
-
-        // Allow requests with no origin (file://, mobile apps, curl, postman)
-        if (!origin) {
-            return callback(null, true);
-        }
-
-        // Check if origin matches any allowed origin
-        const isAllowed = allowedOrigins.some(allowed => {
-            if (allowed instanceof RegExp) {
-                return allowed.test(origin);
-            }
-            return allowed === origin;
-        });
-
-        if (isAllowed) {
-            callback(null, true);
-        } else {
-            // In development, allow all origins
-            if (process.env.NODE_ENV !== 'production') {
-                callback(null, true);
-            } else {
-                callback(null, true); // Allow all for now, can be restricted later
-            }
-        }
-    },
+// Enable CORS for frontend - Allow all origins for Vercel deployment
+app.use(cors({
+    origin: true, // Allow all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-};
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
-app.use(cors(corsOptions));
+// Handle preflight requests
+app.options('*', cors());
 
-// Rate limiting for API endpoints
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: {
-        success: false,
-        message: 'Too many requests from this IP, please try again after 15 minutes'
-    },
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-// Stricter rate limiting for contact form to prevent spam
-const contactLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10, // Limit each IP to 10 contact submissions per hour
-    message: {
-        success: false,
-        message: 'Too many contact submissions from this IP. Please try again after an hour.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false
-});
-
-// Apply rate limiters
-app.use('/api', apiLimiter);
-app.use('/api/contact', contactLimiter);
-
-// Body parser
-app.use(express.json({ limit: '10kb' })); // Limit body size
+// Body parser - MUST come before routes
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Data sanitization against NoSQL query injection
@@ -111,13 +45,11 @@ app.use(mongoSanitize());
 // Custom Middleware
 // ==============
 
-// Request logging (development)
-if (process.env.NODE_ENV === 'development') {
-    app.use((req, res, next) => {
-        console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
-        next();
-    });
-}
+// Request logging
+app.use((req, res, next) => {
+    console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
+    next();
+});
 
 // ==============
 // API Routes
@@ -184,20 +116,19 @@ app.use((err, req, res, next) => {
     // Default error response
     res.status(err.status || 500).json({
         success: false,
-        message: err.message || 'Internal Server Error',
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+        message: err.message || 'Internal Server Error'
     });
 });
 
 // ==============
-// Start Server (for local development)
+// Start Server (for local development only)
 // ==============
 
-// Only start server if not in Vercel serverless environment
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// Only start server if running locally (not on Vercel)
+if (!process.env.VERCEL) {
     const PORT = process.env.PORT || 5000;
 
-    const server = app.listen(PORT, () => {
+    app.listen(PORT, () => {
         console.log('');
         console.log('╔════════════════════════════════════════════╗');
         console.log('║   🚀 Portfolio Backend API Server          ║');
@@ -210,25 +141,8 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
         console.log('📝 Available Endpoints:');
         console.log(`   POST   http://localhost:${PORT}/api/contact     - Submit contact form`);
         console.log(`   GET    http://localhost:${PORT}/api/contact     - List all contacts`);
-        console.log(`   GET    http://localhost:${PORT}/api/contact/:id - Get single contact`);
-        console.log(`   PUT    http://localhost:${PORT}/api/contact/:id/status - Update status`);
-        console.log(`   DELETE http://localhost:${PORT}/api/contact/:id - Delete contact`);
         console.log(`   GET    http://localhost:${PORT}/api/health      - Health check`);
         console.log('');
-    });
-
-    // Graceful shutdown
-    process.on('SIGTERM', () => {
-        console.log('👋 SIGTERM signal received: closing HTTP server');
-        server.close(() => {
-            console.log('🛑 HTTP server closed');
-            process.exit(0);
-        });
-    });
-
-    process.on('unhandledRejection', (err) => {
-        console.error('❌ Unhandled Promise Rejection:', err);
-        server.close(() => process.exit(1));
     });
 }
 
