@@ -65,10 +65,10 @@ exports.submitContact = async (req, res) => {
         console.error('Contact submission error:', error);
 
         // Handle mongoose validation errors
-        if (error.name === 'ValidationError') {
+        if (error.name === 'ValidationError' && error.errors) {
             const messages = Object.values(error.errors).map(err => ({
                 field: err.path,
-                message: err.message
+                message: err.message || 'Validation error'
             }));
             return res.status(400).json({
                 success: false,
