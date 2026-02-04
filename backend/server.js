@@ -25,24 +25,9 @@ app.use(helmet({
 }));
 
 // Enable CORS for frontend
+// In development, allow all origins (including file:// protocol)
 const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, postman)
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://localhost:5500',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:5500',
-            'http://localhost:8080',
-            process.env.FRONTEND_URL
-        ].filter(Boolean);
-
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: true, // Allow all origins in development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
