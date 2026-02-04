@@ -13,6 +13,9 @@ const { validationResult } = require('express-validator');
  */
 exports.submitContact = async (req, res) => {
     try {
+        // Ensure DB is connected before proceeding (critical for serverless)
+        await connectDB();
+
         // Check for validation errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
