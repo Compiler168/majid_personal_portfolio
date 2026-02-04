@@ -1,0 +1,10 @@
+{
+    "name": "majid-portfolio-frontend",
+    "version": "1.0.0",
+    "description": "Modern portfolio website for Majid Iqbal - UI/UX Designer & Web Developer",
+    "private": true,
+    "scripts": {
+        "start": "python -m http.server 8000",
+        "serve": "http-server -p 8000"
+    }
+}
