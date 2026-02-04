@@ -32,9 +32,8 @@ exports.submitContact = async (req, res) => {
         const { name, email, subject, message } = req.body;
 
         // Get client IP and user agent for security logging
-        const ipAddress = req.ip ||
-            req.headers['x-forwarded-for'] ||
-            req.connection.remoteAddress ||
+        const ipAddress = req.headers['x-forwarded-for'] ||
+            req.socket.remoteAddress ||
             'Unknown';
         const userAgent = req.headers['user-agent'] || 'Unknown';
 
@@ -88,7 +87,8 @@ exports.submitContact = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: 'An error occurred while sending your message. Please try again later.'
+            message: 'Server error: ' + error.message,
+            error: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };

@@ -35,11 +35,12 @@ const postData = async (endpoint, data) => {
             },
             body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error('Failed to post');
+
+        // Always try to parse JSON
         return await response.json();
     } catch (error) {
         console.error(`Error posting to ${endpoint}:`, error);
-        return null;
+        return { success: false, message: 'Could not connect to server. Please try again later.' };
     }
 };
 
