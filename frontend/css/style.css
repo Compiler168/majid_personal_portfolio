@@ -1415,6 +1415,104 @@ section h2 {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Hiring / Platforms Section
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hiring-section {
+    background: var(--bg-primary);
+    padding: 0 0 60px 0;
+    margin-top: -30px;
+    position: relative;
+    z-index: 2;
+}
+
+.section-top-text {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.hiring-grid {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.hiring-card {
+    background: var(--bg-card);
+    padding: 20px 30px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-decoration: none;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+    min-width: 160px;
+    justify-content: center;
+}
+
+.hiring-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--primary);
+}
+
+.hiring-card img {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.7;
+    transition: var(--transition-smooth);
+}
+
+.hiring-card i {
+    font-size: 1.8rem;
+    color: var(--text-secondary);
+    transition: var(--transition-smooth);
+}
+
+.hiring-card span {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: var(--font-heading);
+}
+
+.hiring-card:hover img {
+    filter: grayscale(0%);
+    opacity: 1;
+}
+
+.hiring-card:hover i {
+    color: var(--text-primary);
+}
+
+/* Specific Brand Colors on Hover */
+.hiring-card.upwork:hover {
+    border-color: #14a800;
+}
+
+.hiring-card.fiverr:hover {
+    border-color: #1dbf73;
+}
+
+.hiring-card.linkedin:hover {
+    border-color: #0077b5;
+}
+
+.hiring-card.github:hover {
+    border-color: #333;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    Responsive Design
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -1639,5 +1737,16 @@ section h2 {
     .profile-pic {
         width: 120px;
         height: 120px;
+    }
+
+    /* Hiring Mobile */
+    .hiring-grid {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .hiring-card {
+        width: 100%;
+        justify-content: center;
     }
 }
