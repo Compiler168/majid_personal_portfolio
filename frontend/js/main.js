@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Load Skills
+// Load Skills
 function loadSkills() {
     const skills = portfolioData.skills;
     const skillsGrid = document.getElementById('skillsGrid');
@@ -132,11 +133,8 @@ function loadSkills() {
 
     skillsGrid.innerHTML = skills.map(skill => `
         <div class="skill-card reveal">
-            <div class="skill-icon">${skill.icon}</div>
-            <h3>${skill.category}</h3>
-            <ul>
-                ${skill.skills.map(s => `<li>${s}</li>`).join('')}
-            </ul>
+            <div class="skill-icon"><i class="${skill.icon}"></i></div>
+            <h3>${skill.name}</h3>
         </div>
     `).join('');
 }
@@ -153,7 +151,7 @@ function loadServices() {
 
     servicesGrid.innerHTML = services.map(service => `
         <div class="service-card reveal">
-            <div class="service-icon">${service.icon || '🛠️'}</div>
+            <div class="service-icon"><i class="${service.icon}"></i></div>
             <h3>${service.title}</h3>
             <p>${service.description}</p>
         </div>
@@ -176,7 +174,9 @@ function loadPortfolio() {
 
     projects.forEach(project => {
         const isIcon = !project.image.includes('/');
-        const card = document.createElement('div');
+        const card = document.createElement('a');
+        card.href = project.link || '#';
+        card.target = "_blank";
         card.className = 'portfolio-card reveal';
         card.innerHTML = `
             <div class="portfolio-image">
@@ -186,18 +186,11 @@ function loadPortfolio() {
                 <p class="portfolio-category">${project.category}</p>
                 <h3>${project.title}</h3>
                 <p class="portfolio-description">${project.description}</p>
-                <div class="portfolio-tech">
-                    ${project.technologies.slice(0, 3).map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
+                <div class="portfolio-link">
+                    <span>View Project <i class="fas fa-arrow-right"></i></span>
                 </div>
             </div>
         `;
-
-        // Robust event handling
-        card.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showProjectModal(project.id);
-        });
 
         portfolioGrid.appendChild(card);
     });
@@ -214,17 +207,25 @@ function loadTestimonials() {
     }
 
     testimonialsGrid.innerHTML = testimonials.map(testimonial => {
+        // Fallback for image if it doesn't exist
+        const imageHtml = testimonial.image ?
+            `<img src="${testimonial.image}" alt="${testimonial.name}" class="testimonial-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">` : '';
+
         const initials = testimonial.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
         return `
         <div class="testimonial-card reveal">
             <div class="testimonial-quote"><i class="fas fa-quote-left"></i></div>
-            <div class="rating">${'★'.repeat(testimonial.rating || 5)}</div>
             <p class="testimonial-text">"${testimonial.text}"</p>
-            <div class="testimonial-footer">
-                <div class="testimonial-avatar">${initials}</div>
-                <div class="testimonial-author">
-                    <p class="testimonial-name">${testimonial.name}</p>
-                    <p class="testimonial-company">${testimonial.company}</p>
+            <div class="testimonial-user">
+                <div class="testimonial-avatar">
+                    ${imageHtml}
+                    <div class="avatar-placeholder" style="${testimonial.image ? 'display:none' : 'display:flex'}">${initials}</div>
+                </div>
+                <div class="testimonial-info">
+                    <h4>${testimonial.name}</h4>
+                    <p class="testimonial-location"><i class="fas fa-map-marker-alt"></i> ${testimonial.location}</p>
+                    <div class="rating">${'★'.repeat(testimonial.rating)}</div>
                 </div>
             </div>
         </div>
