@@ -1,5 +1,6 @@
 const Contact = require('../models/Contact');
 const { validationResult } = require('express-validator');
+const connectDB = require('../config/db');
 
 /**
  * Contact Controller
