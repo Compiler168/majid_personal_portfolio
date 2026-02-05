@@ -1401,12 +1401,15 @@ section h2 {
     gap: 6px;
     cursor: pointer;
     padding: 5px;
+    color: var(--text-primary);
+    /* Ensure it follows text color */
 }
 
 .hamburger span {
     width: 28px;
     height: 3px;
-    background: var(--text-primary);
+    background: currentColor;
+    /* Adapts to text color inversion */
     transition: var(--transition-smooth);
     border-radius: 2px;
 }
