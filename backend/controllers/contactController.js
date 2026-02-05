@@ -50,6 +50,76 @@ exports.submitContact = async (req, res) => {
 
         console.log(`📧 New contact submission from: ${email}`);
 
+        // --- EMAIL FUNCTIONALITY ---
+        // Only attempt to send email if credentials are setup
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            const nodemailer = require('nodemailer');
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
+            // 1. Admin Notification Options
+            const mailOptionsAdmin = {
+                from: `"${name}" <${email}>`, // Note: Gmail often overrides 'from' to the auth user, but 'reply-to' works
+                replyTo: email,
+                to: process.env.EMAIL_USER,
+                subject: `New Portfolio Message: ${subject}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; max-width: 600px; margin: 0 auto; background-color: #f9f9f9;">
+                        <h2 style="color: #6366f1;">New Contact Submission</h2>
+                        <p><strong>Name:</strong> ${name}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Subject:</strong> ${subject}</p>
+                        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
+                        <p style="font-size: 16px; line-height: 1.6;">${message.replace(/\n/g, '<br>')}</p>
+                        <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #888;">Received from: ${ipAddress}</p>
+                    </div>
+                `
+            };
+
+            // 2. Auto-Reply Options
+            const mailOptionsUser = {
+                from: `"Majid Iqbal" <${process.env.EMAIL_USER}>`,
+                to: email,
+                subject: `Thank you for contacting me! - ${subject}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e0e0e0; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h1 style="color: #6366f1; margin: 0;">Majid Iqbal</h1>
+                            <p style="color: #6b7280; font-size: 14px;">UI/UX Designer & Full-Stack Developer</p>
+                        </div>
+                        <h2 style="color: #1f2937;">Hello ${name},</h2>
+                        <p style="color: #374151; line-height: 1.6;">Thank you for reaching out! I successfully received your message regarding "<strong>${subject}</strong>".</p>
+                        <p style="color: #374151; line-height: 1.6;">I appreciate your interest in my work. I will review your message and get back to you as soon as possible, usually within 24 hours.</p>
+                        <br>
+                        <p style="color: #374151;">Best Regards,</p>
+                        <strong style="color: #6366f1;">Majid Iqbal</strong>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="font-size: 12px; color: #9ca3af; text-align: center;">This is an automated response. Please do not reply to this email directly.</p>
+                    </div>
+                `
+            };
+
+            // Send Emails in background
+            Promise.all([
+                transporter.sendMail(mailOptionsAdmin),
+                transporter.sendMail(mailOptionsUser)
+            ]).then(() => {
+                console.log('✅ Emails sent successfully');
+            }).catch(err => {
+                console.error('❌ Error sending emails:', err);
+            });
+
+        } else {
+            console.warn('⚠️ Email credentials not found. Skipping email sending.');
+        }
+
         res.status(201).json({
             success: true,
             message: 'Your message has been sent successfully! I will get back to you soon.',
